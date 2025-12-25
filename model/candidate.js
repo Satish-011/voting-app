@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 
-// Define the Person schema
 const candidateSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -33,6 +32,5 @@ const candidateSchema = new mongoose.Schema({
   },
 });
 
-const candidate =  mongoose.model("candidates", candidateSchema);
-
-module.exports = candidate;
+const Candidate = mongoose.model("Candidate", candidateSchema);
+module.exports = Candidate;

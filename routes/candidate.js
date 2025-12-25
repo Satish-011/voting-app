@@ -1,34 +1,32 @@
 const express = require("express");
-const route = express.Router();
+const router = express.Router();
 
 const Candidate = require("../model/candidate");
 const User = require("../model/user");
 
-const { JwtMiddleare, token } = require("../auth");
+const { jwtMiddleware } = require("../auth");
 
 // admin check
-const checkAdminRole = async (userID) => {
+const isAdminUser = async (userId) => {
   try {
-    const user = await User.findById(userID);
-    return user && user.role === "admin";
+    const user = await User.findById(userId);
+    if (!user) return false;
+    return user.role === "admin";
   } catch {
     return false;
   }
 };
 
 // create candidate
-route.post("/candidates",JwtMiddleare, async (req, res) => {
-  const { userID } = req.body;
+router.post("/signup", jwtMiddleware, async (req, res) => {
+  const { id: userId } = req.userPayload;
 
-  if (!(await checkAdminRole(userID)))
+  if (!(await isAdminUser(userId)))
     return res.status(403).json({ message: "not admin" });
 
   try {
     const newCandidate = new Candidate(req.body);
     await newCandidate.save();
-    const payload={
-      
-    }
     res.status(201).json({ msg: "success" });
   } catch (err) {
     res.status(500).send("internal error");
@@ -36,40 +34,40 @@ route.post("/candidates",JwtMiddleare, async (req, res) => {
 });
 
 // update candidate
-route.put("/candidates/:candidateID", async (req, res) => {
-  const { userID } = req.body;
+router.put("/:candidateId", jwtMiddleware, async (req, res) => {
+  const { id: userId } = req.userPayload;
 
-  if (!(await checkAdminRole(userID)))
+  if (!(await isAdminUser(userId)))
     return res.status(403).json({ message: "not admin" });
 
   try {
-    const response = await Candidate.findByIdAndUpdate(
-      req.params.candidateID,
+    const updatedCandidate = await Candidate.findByIdAndUpdate(
+      req.params.candidateId,
       req.body,
       { new: true, runValidators: true }
     );
 
-    if (!response) return res.status(404).json({ msg: "not found" });
+    if (!updatedCandidate) return res.status(404).json({ msg: "not found" });
 
-    res.json(response);
+    res.json(updatedCandidate);
   } catch (err) {
     res.status(500).send("internal error");
   }
 });
 
 // delete candidate
-route.delete("/candidates/:candidateID", async (req, res) => {
-  const { userID } = req.body;
+router.delete("/:candidateId", async (req, res) => {
+  const { id: userId } = req.userPayload;
 
-  if (!(await checkAdminRole(userID)))
+  if (!(await isAdminUser(userId)))
     return res.status(403).json({ message: "not admin" });
 
   try {
-    const response = await Candidate.findByIdAndDelete(
-      req.params.candidateID
+    const deletedCandidate = await Candidate.findByIdAndDelete(
+      req.params.candidateId
     );
 
-    if (!response) return res.status(404).json({ msg: "not found" });
+    if (!deletedCandidate) return res.status(404).json({ msg: "not found" });
 
     res.json({ msg: "deleted" });
   } catch (err) {
@@ -77,4 +75,4 @@ route.delete("/candidates/:candidateID", async (req, res) => {
   }
 });
 
-module.exports = route;
+module.exports = router;

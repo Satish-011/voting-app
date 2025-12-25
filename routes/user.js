@@ -1,62 +1,84 @@
 const express = require("express");
-const route = express.Router();
+const router = express.Router();
 
 const User = require("../model/user");
 const Candidate = require("../model/candidate");
 
-const { JwtMiddleare, token } = require("../auth");
+const { jwtMiddleware, generateToken } = require("../auth");
 
-// signup
-route.post("/signup", JwtMiddleare, async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
+    const { aadharCardNumber, role } = req.body;
+    const existingUser = await User.findOne({ aadharCardNumber });
+    if (existingUser) {
+      return res.status(400).send("user already exist");
+    }
+    if (role === "admin") {
+      const adminExists = await User.findOne({ role: "admin" });
+      if (adminExists) {
+        return res.status(403).send("already admin exist");
+      }
+    }
+
     const newUser = new User(req.body);
     await newUser.save();
 
-    const payload = {
-      mobile,
-      password,
-    };
-    token(payload);
+    const token = generateToken({ id: newUser.id });
 
-    res.status(201).json({ msg: "success" });
+    res.status(201).json({
+      msg: "success",
+      token: token,
+    });
   } catch (err) {
     res.status(500).json(err);
   }
 });
 
 // login
-route.post("/login", JwtMiddleare, async (req, res) => {
-  const { mobile, password } = req.body;
-
-  const payload = {
-    mobile,
-    password,
-  };
-  token(payload);
+router.post("/login", async (req, res) => {
+  const { aadharCardNumber, password } = req.body;
 
   try {
-    const user = await User.findOne({ mobile });
+    const user = await User.findOne({ aadharCardNumber: aadharCardNumber });
     if (!user) return res.send("user not found");
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) return res.send("wrong password");
+    const isPasswordValid = await user.comparePassword(password);
+    if (!isPasswordValid) return res.send("wrong password");
 
-    res.send({ msg: "success" });
+    const tokenPayload = {
+      id: user.id,
+    };
+    const token = generateToken(tokenPayload);
+
+    res.status(201).json({ msg: "success", token: token });
   } catch (err) {
     res.status(500).send(err);
   }
 });
 
+// profile
+router.get("/profile", jwtMiddleware, async (req, res) => {
+  try {
+    const userPayload = req.userPayload;
+    const user = await User.findById(userPayload.id);
+    res.send(user);
+  } catch (err) {
+    res.send("internal issues");
+  }
+});
+
 // update password
-route.put("/profile/password", JwtMiddleare, async (req, res) => {
-  const { mobile } = req.payloadData;
-  const { password } = req.body;
+router.put("/profile/password", jwtMiddleware, async (req, res) => {
+  const userPayload = req.userPayload;
+  const { currentpassword, newPassword } = req.body;
+
+  const user = await User.findById(userPayload);
+
+  const isPasswordValid = await user.comparePassword(currentpassword);
+  if (!isPasswordValid) return res.send("wrong password");
 
   try {
-    const user = await User.findOne({ mobile });
-    if (!user) return res.send("user not found");
-
-    user.password = password;
+    user.password = newPassword;
     await user.save();
 
     res.send({ msg: "success" });
@@ -66,13 +88,13 @@ route.put("/profile/password", JwtMiddleare, async (req, res) => {
 });
 
 // get all candidates
-route.get("/candidates", JwtMiddleare, async (req, res) => {
+router.get("/candidates", jwtMiddleware, async (req, res) => {
   try {
-    const data = await Candidate.find();
-    res.json(data);
+    const candidates = await Candidate.find();
+    res.json(candidates);
   } catch (err) {
     res.status(500).send("internal error");
   }
 });
 
-module.exports = route;
+module.exports = router;

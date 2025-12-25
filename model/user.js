@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
   email: String,
+
   mobile: String,
   address: {
     type: String,
@@ -19,7 +20,7 @@ const userSchema = new mongoose.Schema({
   aadharCardNumber: {
     type: Number,
     required: true,
-    unique: true, 
+    unique: true,
   },
   password: {
     type: String,
@@ -43,8 +44,8 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = async function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
 };
 
 module.exports = mongoose.model("User", userSchema);

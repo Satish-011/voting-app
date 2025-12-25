@@ -1,21 +1,20 @@
 const express = require("express");
 const app = express();
 
-//dotenv file
 require("dotenv").config();
 
-//db connection
-const database = require("./db");
+// DB
+const dbConnection = require("./db");
 
-//middleware
+// Middleware
 app.use(express.json());
 
-//routes
-const routes = require("./routes/user");
-const route = require("./routes/candidate");
-//use the routes
-app.use("/", routes);
-app.use("/", route);
+// Routes
+const userRoutes = require("./routes/user");
+const candidateRoutes = require("./routes/candidate");
+
+app.use("/user", userRoutes);
+app.use("/candidate", candidateRoutes);
 
 const port = process.env.PORT || 3000;
 

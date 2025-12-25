@@ -1,28 +1,25 @@
-const express = require("express");
 const jwt = require("jsonwebtoken");
 
-//Middleware
+// JWT Middleware
+const jwtMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.send("please login/signup");
 
-const JwtMiddleare = (req, res, next) => {
-  const authorization = req.headers.authorization;
-  if (!authorization) return res.send("please login/signup");
+  const jwtToken = authHeader.split(" ")[1];
+  if (!jwtToken) return res.send("token not found");
 
-  const token = req.headers.authorization.split(" ")[1];
-  if (!token) return res.send("token not found");
   try {
-    const Decoded_payload = jwt.verify(token, process.env.key);
-
-    req.payloadData = Decoded_payload;
+    const decodedPayload = jwt.verify(jwtToken, process.env.key);
+    req.userPayload = decodedPayload;
     next();
   } catch (err) {
-    res.send("internal issues");
+    return res.status(401).json({ message: "wrong token" });
   }
 };
 
-//token creation;
-
-const token = (payload) => {
+// Token generator
+const generateToken = (payload) => {
   return jwt.sign(payload, process.env.key);
 };
 
-module.exports = { JwtMiddleare, token };
+module.exports = { jwtMiddleware, generateToken };
