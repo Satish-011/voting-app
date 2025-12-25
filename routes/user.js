@@ -4,11 +4,20 @@ const route = express.Router();
 const User = require("../model/user");
 const Candidate = require("../model/candidate");
 
+const { JwtMiddleare, token } = require("../auth");
+
 // signup
-route.post("/signup", async (req, res) => {
+route.post("/signup", JwtMiddleare, async (req, res) => {
   try {
     const newUser = new User(req.body);
     await newUser.save();
+
+    const payload = {
+      mobile,
+      password,
+    };
+    token(payload);
+
     res.status(201).json({ msg: "success" });
   } catch (err) {
     res.status(500).json(err);
@@ -16,8 +25,14 @@ route.post("/signup", async (req, res) => {
 });
 
 // login
-route.post("/login", async (req, res) => {
+route.post("/login", JwtMiddleare, async (req, res) => {
   const { mobile, password } = req.body;
+
+  const payload = {
+    mobile,
+    password,
+  };
+  token(payload);
 
   try {
     const user = await User.findOne({ mobile });
@@ -33,8 +48,9 @@ route.post("/login", async (req, res) => {
 });
 
 // update password
-route.put("/profile/password", async (req, res) => {
-  const { mobile, password } = req.body;
+route.put("/profile/password", JwtMiddleare, async (req, res) => {
+  const { mobile } = req.payloadData;
+  const { password } = req.body;
 
   try {
     const user = await User.findOne({ mobile });
@@ -50,7 +66,7 @@ route.put("/profile/password", async (req, res) => {
 });
 
 // get all candidates
-route.get("/candidates", async (req, res) => {
+route.get("/candidates", JwtMiddleare, async (req, res) => {
   try {
     const data = await Candidate.find();
     res.json(data);

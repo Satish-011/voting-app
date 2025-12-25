@@ -4,6 +4,8 @@ const route = express.Router();
 const Candidate = require("../model/candidate");
 const User = require("../model/user");
 
+const { JwtMiddleare, token } = require("../auth");
+
 // admin check
 const checkAdminRole = async (userID) => {
   try {
@@ -15,7 +17,7 @@ const checkAdminRole = async (userID) => {
 };
 
 // create candidate
-route.post("/candidates", async (req, res) => {
+route.post("/candidates",JwtMiddleare, async (req, res) => {
   const { userID } = req.body;
 
   if (!(await checkAdminRole(userID)))
@@ -24,6 +26,9 @@ route.post("/candidates", async (req, res) => {
   try {
     const newCandidate = new Candidate(req.body);
     await newCandidate.save();
+    const payload={
+      
+    }
     res.status(201).json({ msg: "success" });
   } catch (err) {
     res.status(500).send("internal error");
