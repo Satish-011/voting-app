@@ -9,7 +9,7 @@ const dbConnection = require("./db");
 // Middleware
 app.use(express.json());
 
-// Routes
+// Routess
 const userRoutes = require("./routes/user");
 const candidateRoutes = require("./routes/candidate");
 

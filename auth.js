@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-// JWT Middleware
+// JWT Middlewaree
 const jwtMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.send("please login/signup");

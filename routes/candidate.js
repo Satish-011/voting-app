@@ -5,6 +5,7 @@ const Candidate = require("../model/candidate");
 const User = require("../model/user");
 
 const { jwtMiddleware } = require("../auth");
+const user = require("../model/user");
 
 // admin check
 const isAdminUser = async (userId) => {
@@ -56,7 +57,7 @@ router.put("/:candidateId", jwtMiddleware, async (req, res) => {
 });
 
 // delete candidate
-router.delete("/:candidateId", async (req, res) => {
+router.delete("/:candidateId", jwtMiddleware, async (req, res) => {
   const { id: userId } = req.userPayload;
 
   if (!(await isAdminUser(userId)))
@@ -75,4 +76,69 @@ router.delete("/:candidateId", async (req, res) => {
   }
 });
 
+//start voting
+router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
+  try {
+    const { id } = req.payloadData;
+
+    const user = await User.findById(id);
+    if (!user) return res.send("user not found");
+
+    if (user.role === "admin") return res.send("you are admin can't vote");
+
+    if (user.isVoted) return res.send("you can't vote multiple times");
+
+    const user_voted_for = req.params.candidateId;
+    if (!user_voted_for) return res.send("candidate not found");
+
+    const candidate = await Candidate.findById(user_voted_for);
+    if (!candidate) return res.send("candidate not found");
+
+    candidate.votes.push({
+      user: id,
+    });
+
+    candidate.voteCount += 1;
+
+    user.isVoted = true;
+
+    await candidate.save();
+    await user.save();
+
+    res.send("vote registered successfully");
+  } catch (err) {
+    res.status(500).send("internal error");
+  }
+});
+
+//vote count
+router.get("/vote/count", async (req, res) => {
+  try {
+    const users = await Candidate.find().sort({ voteCount: -1 });
+
+    const result = users.map(u => ({
+      name: u.name,
+      party: u.party,
+      voteCount: u.voteCount
+    }));
+
+    res.send(result);
+  } catch (err) {
+    res.status(500).send("internal error");
+  }
+});
+
+// Get List of all candidates with only name and party fields
+router.get("/", async (req, res) => {
+  try {
+    // Find all candidates and select only the name,party fieldsand votecount, excluding _id
+    const candidates = await Candidate.find({}, "name party votecount -_id");
+
+    // Return the list of candidates
+    res.status(200).json(candidates);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 module.exports = router;

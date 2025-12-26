@@ -22,8 +22,8 @@ router.post("/signup", async (req, res) => {
 
     const newUser = new User(req.body);
     await newUser.save();
-
-    const token = generateToken({ id: newUser.id });
+    const payload = newUser.id;
+    const token = generateToken(payload);
 
     res.status(201).json({
       msg: "success",

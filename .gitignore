@@ -1,4 +1,4 @@
-# ignore the node_module
+# ignore the node_modules
 node_modules/
 .env
 
